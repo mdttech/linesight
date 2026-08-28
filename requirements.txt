@@ -11,3 +11,6 @@ xgboost==2.0.3
 imbalanced-learn==0.12.3
 shap==0.45.1
 pytest==8.2.2
+xgboost==3.4.1
+shap==0.52.0
+scikit-learn==1.8.0
