@@ -1,0 +1,66 @@
+seed: 42
+takt_seconds: 60
+n_stations: 12
+
+shops:
+  body:
+    stations: [1, 2, 3, 4]
+    default_tier: instrumented
+  paint:
+    stations: [5, 6]
+    default_tier: partial
+  general_assembly:
+    stations: [7, 8, 9, 10, 11, 12]
+    default_tier: manual
+    overrides:
+      9: partial
+
+# low/mode/high are fractions of takt_seconds (i.e. the paper's 8/10/12
+# reinterpreted as 0.8/1.0/1.2 of takt, so a Base-variant part is normally
+# a little under takt and it's the variant multipliers below that push
+# specific stations over takt during high-option runs)
+processing_time:
+  dist: triangular
+  low: 0.80
+  mode: 1.00
+  high: 1.20
+
+reliability:
+  mtbf_minutes: 95
+  mttr_minutes: 5
+
+buffers:
+  default_range: [1, 15]
+  large_buffer:
+    after_station: 6
+    capacity: 120
+
+variants:
+  Base:
+    share: 0.5
+    multipliers: {}
+  Mid:
+    share: 0.3
+    multipliers:
+      4: 1.15
+      7: 1.10
+  Loaded:
+    share: 0.2
+    multipliers:
+      4: 1.40
+      7: 1.35
+      9: 1.30
+
+faults:
+  equipment_wear:
+    station: 7
+    start_minute: 240
+    slope: 0.0006
+  operator_variation:
+    stations: [10, 11]
+    night_shift_hours: [22, 6]
+    night_shift_variance_multiplier: 1.4
+
+simulation:
+  warmup_minutes: 60
+  run_minutes: 2880

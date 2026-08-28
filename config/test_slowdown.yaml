@@ -1,0 +1,46 @@
+seed: 7
+takt_seconds: 60
+n_stations: 12
+
+shops:
+  body:
+    stations: [1, 2, 3, 4]
+    default_tier: instrumented
+  paint:
+    stations: [5, 6]
+    default_tier: partial
+  general_assembly:
+    stations: [7, 8, 9, 10, 11, 12]
+    default_tier: manual
+    overrides:
+      9: partial
+
+processing_time:
+  dist: triangular
+  low: 0.80
+  mode: 1.00
+  high: 1.20
+
+reliability:
+  mtbf_minutes: 1000000000
+  mttr_minutes: 1
+
+buffers:
+  default_range: [1, 15]
+  large_buffer:
+    after_station: 6
+    capacity: 120
+
+variants:
+  Base:
+    share: 1.0
+    multipliers: {}
+
+faults:
+  constant_slowdown:
+    station: 5
+    multiplier: 1.25
+
+simulation:
+  warmup_minutes: 60
+  run_minutes: 2880
