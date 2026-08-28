@@ -41,10 +41,15 @@ def _buffer_capacity(df, a, b):
     return int(running.max()) if len(running) else 0
 
 
-def generate_model(df):
-    """df: the event log, columns part_id, activity, ts_start, ts_finish.
-    ts_* can be numeric (minutes) or datetimes -- only relative order and
-    differences matter here."""
+def generate_model(df, variant_map=None):
+    """df: the event log. variant_map: optional {part_id: variant}, from
+    the build sequence -- when given, each node also stores its observed
+    durations broken out by variant, alongside the pooled distribution.
+    This is what lets the roll-forward simulation (twin/sync/rollforward.py)
+    use the fact that upcoming variants are already known, rather than
+    resampling from a distribution that blends every variant together.
+    Fully backward compatible: omit variant_map and behaviour is identical
+    to before."""
     traces = build_traces(df)
 
     G = nx.DiGraph()
@@ -65,6 +70,15 @@ def generate_model(df):
             durations = raw_durations.to_numpy(dtype=float)
         G.add_node(node, freq=int(freq), durations=durations)
 
+        if variant_map is not None:
+            by_variant = {}
+            variants_here = sub["part_id"].map(variant_map)
+            for variant in set(variant_map.values()):
+                mask = (variants_here == variant).to_numpy()
+                if mask.any():
+                    by_variant[variant] = durations[mask]
+            G.nodes[node]["durations_by_variant"] = by_variant
+
     for (a, b), freq in edge_freq.items():
         cap = _buffer_capacity(df, a, b)
         G.add_edge(a, b, freq=freq, capacity=cap)
@@ -82,4 +96,16 @@ def sample_processing_time(G, node, rng):
     """Bootstrap-resample from the node's empirical distribution of
     observed durations -- 'empirical CDF, not a fitted distribution'."""
     durations = G.nodes[node]["durations"]
+    return float(rng.choice(durations))
+
+
+def sample_processing_time_for_variant(G, node, variant, rng):
+    """Same idea, but resamples from the durations observed specifically
+    for this variant at this node, when available -- falls back to the
+    pooled distribution otherwise. This is what makes 'we know the next
+    part is Loaded' actually change the predicted processing time."""
+    by_variant = G.nodes[node].get("durations_by_variant", {})
+    durations = by_variant.get(variant)
+    if durations is None or len(durations) == 0:
+        durations = G.nodes[node]["durations"]
     return float(rng.choice(durations))

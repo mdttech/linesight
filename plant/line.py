@@ -54,6 +54,10 @@ class Station:
 
         self.state = "Starved"
         self.state_since = 0.0
+        # externally settable by a controller process (Phase 3's experiment);
+        # 1.0 = no effect, so nothing changes unless something explicitly
+        # sets this -- purely additive, doesn't touch existing behaviour
+        self.speed_boost = 1.0
         self.busy_time = 0.0
         self.next_failure_time = self._sample_next_failure()
 
@@ -94,6 +98,8 @@ class Station:
             sigma = base_sigma * ov["night_shift_variance_multiplier"]
         noise = max(0.5, self.rng.normalvariate(1.0, sigma))
         time *= noise
+
+        time *= self.speed_boost
 
         return max(0.1, time)
 
@@ -137,7 +143,13 @@ def release_process(env, entry_buf, build_sequence):
         yield entry_buf.put(Part(row["part_id"], row["variant"]))
 
 
-def build_and_run(cfg, rng, variant_multipliers):
+def build_and_run(cfg, rng, variant_multipliers, controller_factory=None):
+    """controller_factory: optional callable(env, stations_by_id, records,
+    build_seq) -> generator, started as an additional process. Used by
+    Phase 3's experiment to apply a temporary speed_boost to whichever
+    station a detection/prediction strategy targets, without duplicating
+    the plant-assembly logic for each arm. None (the default) changes
+    nothing about existing behaviour."""
     env = simpy.Environment()
     records = {"events": [], "states": []}
     n = cfg["n_stations"]
@@ -165,6 +177,10 @@ def build_and_run(cfg, rng, variant_multipliers):
 
     build_seq = generate_build_sequence(cfg, rng)
     env.process(release_process(env, buffers[0], build_seq))
+
+    if controller_factory is not None:
+        stations_by_id = {s.id: s for s in stations}
+        env.process(controller_factory(env, stations_by_id, records, build_seq))
 
     env.run(until=cfg["simulation"]["run_minutes"])
 
