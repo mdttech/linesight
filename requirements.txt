@@ -6,11 +6,8 @@ networkx==3.3
 pyyaml==6.0.1
 streamlit==1.36.0
 plotly==5.22.0
-scikit-learn==1.5.0
-xgboost==2.0.3
 imbalanced-learn==0.12.3
-shap==0.45.1
 pytest==8.2.2
-xgboost==3.4.1
-shap==0.52.0
-scikit-learn==1.8.0
+xgboost==2.0.3
+shap==0.45.1
+scikit-learn==1.5.0
