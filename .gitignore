@@ -1,9 +1,4 @@
 @"
-# personal reference docs -- not part of the deliverable
-LineSight_Build_Guide_Complete.md
-LineSight_Business_Proposal_Draft.md
-LineSight_StepByStep_Sprint_Guide.md
-
 # Python
 __pycache__/
 *.pyc
