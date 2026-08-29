@@ -67,6 +67,7 @@ def train_classifier(train_df):
         n_estimators=200, max_depth=4, learning_rate=0.05,
         scale_pos_weight=neg / max(pos, 1),
         eval_metric="aucpr",
+        random_state=0,
     )
     model.fit(train_df[FEATURE_COLUMNS], train_df["label"])
     return model
